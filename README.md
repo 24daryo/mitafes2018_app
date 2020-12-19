@@ -2,6 +2,8 @@
 
 こちらは文化祭の催し物として制作した「表情診断」というアプリになります。
 
+こちらは私ともう一人の部員とで共同開発し、Webデザインやデバッグをもう一人の方が担当し、基本構造、バックエンド、API接続等は私が担当しました。
+
 <img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/init.png" width="600">
 
 ## 遊び方
