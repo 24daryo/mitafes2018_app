@@ -1,14 +1,17 @@
 # mitafes2019_app
 
-<img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/init.png" width="600">
-
 こちらは文化祭の催し物として制作した「表情診断」というアプリになります。
 
-<img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/odai.png" width="600">
+<img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/init.png" width="600">
+
+## 遊び方
 
 お題が6つ提示され、それぞれのお題に沿った表情をすることでその人の表情の特徴を分析し、結果を出力します。
 
-結果のサンプルは以下のようになります。
+<img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/odai.png" width="600">
+
+
+全てのお題が完了すると以下のようなサンプルが表示されます。
 
 <img src="https://github.com/24daryo/mitafes2019_app/blob/master/image/result.png" width="600">
 
