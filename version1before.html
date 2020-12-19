@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+</head>
+
+<style type="text/css">
+
+</style>
+
+<body>
+    <!--開始セクション-->
+    <section id="initial">
+        <div>
+            <div class="title">表情診断</div></div>
+            <div class="select">プレイヤー人数を選択してください</div>
+            <button id="player1">一人用</button>
+            <button id="player2">二人用</button>
+            <form name="name">
+                <input class="player1_name" type="text" name="p1_name" value="プレイヤー1(左の人)">
+                <input class="player2_name" type="text" name="p2_name" value="プレイヤー2(右の人)">
+            </form>
+            <button id="language">English</button>
+            <button class="how_to_play"> 遊び方</button>
+            <p class="play_text">
+                これからお題が表示されます。<br>
+                そのお題の状況に遭遇したときの表情をしてください。<br>
+                その表情のまま自分の顔を<br>
+                マウスでクリックすると撮影されます。<br>
+                全部で６つのお題が表示されます。<br>
+            </p>
+        </div>
+    </section>
+    
+    <!--お題と撮影のセクション-->
+    <section id="question">
+        <div class="odai_index">お題1</div></div>
+        <div class="odai_detail">サンプル</div></div>
+        <button id="passOdai">パス</button>
+        <!--カメラ用(変更しないでください)-->
+        <!--idをカメラにすることで領域内をクリックして写真撮影可能-->
+        <video id="camera" autoplay width="960" height="720" style="background-color:rgb(255, 208, 0);">ここにカメラが表示されます</video>
+        <!--ここに画像を代入してデバッグしている-->
+        <img id="img">  
+        <!--画像投影用-->
+        <canvas id="canvas"style="display:none"></canvas><!--一時的な画像の貼り付け用-->
+        <!--以上までカメラ用-->
+        
+        <!--デバッグ用の表情データ取得表示-->
+        <!--
+        <textarea id="responseTextArea" class="UIInput"style="width:580px; height:400px;"></textarea>
+        -->
+    </section>
+
+    <!--処理セクション-->
+    <section id="processing">
+        <div class="process">処理中です</div>
+        <img id="compchan" src="walk1.png" alt="compchann" width="152" height="194">
+    </section>
+
+    <!--印刷セクション-->
+    <section id="send_data">
+        <div>
+            <div class="send_text">以下のボタンをクリックするとデータが受付に転送されます</div>
+             <button id="print">印刷する</button>
+        </div>
+    </section>
+
+    <!--終了セクション-->
+    <section id="end">
+        <div class="end_text">
+            ありがとうございました。<br>
+            結果は受付で印刷されます<br>
+            係員を呼び、受付までお越しください<br>
+            忘れ物に十分ご注意ください<br>
+        </div>
+        <button id="return_start">スタートに戻る</button>
+    </section>
+
+    <!--ここにCSSを記述する-->
+    <!--
+        idを指定するときは#
+            例、#send_data{}
+        classを指定するときは.
+            例、.send_data{}
+    -->
+    <style>
+        html {
+            background-color: floralwhite;
+        }
+        body {
+            text-align: center;
+        }
+
+        section#initial {
+            width: 90%;
+            margin: 0% 0% 0% 0%;
+            padding: 20px 20px 20px 20px;
+            text-align: center;
+            display: inline-block;
+        }
+        section#question{
+            text-align: center;
+            display: inline-block;
+        }
+        section#processing{
+            text-align: center;
+            display: inline-block;
+        }
+        section#send_data{
+            text-align: center;
+            display: inline-block;
+        }
+        section#end{
+            text-align: center;
+            display: inline-block;
+        }
+        /*テキスト要素ごとのデザインの修正を行う*/
+        .title{
+            margin-top:20px;
+            margin-bottom:20px;
+            font-size:300%;
+            color: red;
+        }
+        .select {
+            color:orangered;
+            margin-bottom: 20px;
+        }
+        #player1 {
+            position:relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left:2.5%;
+            margin-top:4pt;
+        }
+        #player2 {
+            position: relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left: 2.5%;
+            margin-top: 4pt;
+        }
+        #language {
+            position: relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left: 2.5%;
+            margin-top: 4pt;
+        }
+        .how_to_play {
+            position: relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left: 2.5%;
+            margin-top: 4pt;
+        }
+        .play_text {
+            margin-right: auto;
+            margin-left: auto;
+            margin-top: 30px;
+            font-size:110%;
+            width: 40%;
+            background-color: antiquewhite;
+            color: #ff2e00;
+        }
+        .odai_index {
+            margin-top: 20px;
+            color: #ff2e00;
+        }
+        .odai_detail {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 200%;
+            color: #ff2e00;
+        }
+        .process {
+            font-size:150%;
+            color: #ff2e00;
+            margin-top: 20px;
+        }
+        .send_text {
+            font-size:120%;
+            color: #ff2e00;
+            margin-top: 20px;
+        }
+        
+        #print {
+            position: relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left: 2.5%;
+            margin-top: 20px;
+        }
+        .end_text {
+            color: #ff2e00;
+            margin-top: 20px;
+        }
+        #return_start {
+            position: relative;
+            display: inline-block;
+            padding: 0.25em 0.5em;
+            text-decoration: none;
+            color: #FFF;
+            background: #fd9535; /*色*/
+            border-radius: 4px; /*角の丸み*/
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+            font-size: 150%;
+            font-weight: bold;
+            border: solid 2px #d27d00;
+            height: 60px;
+            width: auto;
+            margin-left: 2.5%;
+            margin-top: 20px;
+        }
+
+        #compchan{
+            position:absolute;
+            left:35%;
+        }
+    </style>
+
+
+
+
+
+
+
+    <!--JavaScript-->
+    <!--以降はHTMLないのでCSSとは関係なし-->
+    <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript">
+
+        //グローバル変数
+        var fade_time = 500;                    //セクションが入れ替わる間隔
+        var processing_time = 3000;             //「処理中です」を表示する間隔
+        var odai_count = 1;                     //何番目のお題か示す変数
+        var is_click_camera = true;             //連続クリック防止(trueのときのみクリック可能)
+        var imgArray = new Array(6);            //画像(URL形式)を６つ保存する
+        var oneFace = new Array(12);             //１人用、7番目は名前、8番目は端末番号、9番目は送信時間、10番目は右か左か一人か、
+        var leftFace = new Array(12);            //２人用左、7番目は名前、8番目は端末番号、9番目は送信時間、10番目は右か左か一人か、
+        var rightFace = new Array(12);           //２人用右、7番目は名前、8番目は端末番号、9番目は送信時間、10番目は右か左か、
+        var odaiText;            //お題用のテキストを保存する
+        var isEnglich = 0;       //0で日本語、1で英語
+        var faceNum = 1;         //プレイヤー人数
+        //デザイン用変数
+        var left = -200;
+        var pics_src = new Array("walk1.png", "walk2.png");
+        var compchan = document.getElementById("compchan");
+        var num = 0;
+        compchan.style.position = 'relative';
+        //
+        //初期化(画面ロード時の処理)
+        $(document).ready(function(){
+            isEnglich = 0;
+            //初期画面を設定する
+            $('section').hide();                //全てのセクションを非表示
+            $('#initial').show();               //initialセクションだけ表示 
+            $('#camera_cover').hide();          //カメラカバーを非表示 
+            odaiText = new Array(
+                "目の前に美味しそうなタピオカが現れた",
+                "テスト勉強しないで前日を迎えてしまった",
+                "目の前にいちゃついているカップルがいる",
+                "友人が宝くじに当たったと報告してきたとき",
+                "好きだった人にいきなり告白された",
+                "超能力で空を飛べるようになった"); 
+            odaiTextShort = new Array(
+                "タピオカ出現",
+                "ノー勉前日",
+                "いちゃつきカップル",
+                "クジ当選した友人",
+                "告白が本命",
+                "空飛ぶ超能力");          
+            //テキストをランダムで読み込む
+            $("#question").find('.odai_index').text("お題"+odai_count);
+            $("#question").find('.odai_detail').text(odaiText[odai_count-1]);
+        });
+
+        //プレイヤー１がクリックされたとき
+        $('#player1').on('click',function(){
+            //alert('プレイヤー1がクリックされました');
+            faceNum = 1;
+            $('#initial').fadeOut(fade_time);
+            $('#question').delay(fade_time).fadeIn(fade_time);
+        });
+
+        //プレイヤー２がクリックされたとき
+        $('#player2').on('click',function(){
+            faceNum = 2;
+            //alert('プレイヤー2がクリックされました');
+            $('#initial').fadeOut(fade_time);
+            $('#question').delay(fade_time).fadeIn(fade_time);
+        });
+
+        //言語選択がクリックされたとき
+        $('#language').on('click',function(){
+            //alert('プレイヤー2がクリックされました');
+            ChangeLanguage();
+        });
+
+        //お題をパス(お題差し替え)がクリックされたとき
+        $('#passOdai').on('click',function(){
+            ChangeOdai();
+        });
+
+        //カメラがクリックされたとき        
+        $('#camera').on('click',function(){
+            //alert('カメラがクリックされました');
+
+            //連続クリック防止
+            if(is_click_camera){
+                is_click_camera = false;
+                setTimeout(function(){
+                    is_click_camera = true;
+                },fade_time*4);
+                
+
+                odai_count++;
+                if(odai_count<=6){
+                    //まだお題を表示する
+                    //フェードアウト
+                    $('#question').fadeOut(fade_time);                
+                    //0.5秒後
+                    setTimeout(function(){
+                        $("#question").find('.odai_index').text("お題"+odai_count);
+                        $("#question").find('.odai_detail').text(odaiText[odai_count-1]);
+                        $('#question').fadeIn(fade_time);
+                    },2*fade_time);     
+                }else{
+                    //次のセクションに移動する
+                    $('#question').fadeOut(fade_time);
+                    $('#processing').delay(fade_time).fadeIn(fade_time);
+
+                    slideshow_timer();
+
+                    //3秒後に「処理中です」を遷移させる
+                    setTimeout(function(){
+                        $('#processing').fadeOut(fade_time);
+                        $('#send_data').delay(fade_time).fadeIn(fade_time);
+                    },processing_time);
+                }
+            }
+                                
+        });
+
+        //印刷がクリックされたとき
+        $('#print').on('click',function(){
+            //データを転送する
+            if(faceNum===1){
+                SendInfoOne();
+            }else if(faceNum===2){
+                SendInfoLeft();
+                SendInfoRight();
+            }
+            //alert('印刷がクリックされました');
+            $('#send_data').fadeOut(fade_time);
+            $('#end').delay(fade_time).fadeIn(fade_time);
+        });
+
+        //スタート画面がクリックされたとき
+        $('#return_start').on('click',function(){
+            //alert('印刷がクリックされました');
+            window.location.reload();
+        });
+
+
+        //innerHTMLで英語対応
+        function ChangeLanguage(){ 
+            if(isEnglich === 0){  
+                //タイトル画面        
+                $("#initial").find('.title').text("Persona Judge"); 
+                $("#initial").find('.select').text("Please select player number");       
+                $("#initial").find('#player1').text("P1");   
+                $("#initial").find('#player2').text("P2");   
+                $("#initial").find('#language').text("Japanese"); 
+                $("#initial").find('.how_to_play').text("How to play");  
+                $("#initial").find('.play_text').html("The theme text is shown <br>"+
+                "and please make your facial expressions as if you encounter the theme-text situations.<br>"+
+                "Click your face by a mouse and picture is taken.<br>"+
+                "By using pictures, we read the expression tendency and <br>"+
+                "we suggest the diagnosis for you.<br>"+
+                "We cast 6 theme text and please answer with your face! <br>"); 
+                //処理画面
+                $("#processing").find('.process').text("Now Processing");
+                //印刷画面
+                $("#send_data").find('.send_text').text("Please click below button");
+                $("#send_data").find('#print').text("Print");
+                //終了画面  
+                $("#end").find('.end_text').html("Thank you for playing <br>"+
+                "Please receive the results paper in front of reception. <br>"+
+                "please make sure that you have all your belongings.<br>");  
+                $("#end").find('#return_start').text("Return to start"); 
+                isEnglich = 1;
+            }else if(isEnglich ===1){
+                //タイトル画面        
+                $("#initial").find('.title').text("表情診断"); 
+                $("#initial").find('.select').text("プレイヤー人数を選択してください");       
+                $("#initial").find('#player1').text("一人用");   
+                $("#initial").find('#player2').text("二人用");   
+                $("#initial").find('#language').text("English"); 
+                $("#initial").find('.how_to_play').text("遊び方");  
+                $("#initial").find('.play_text').html("これからお題が表示されます。<br>"+
+                "そのお題の状況に遭遇したときの表情をしてください<br>"+
+                "その表情のまま自分の顔を!<br>"+
+                "マウスでクリックすると撮影されます。<br>"+
+                "全部で６つのお題が表示されます。<br>");  
+                //処理画面
+                $("#processing").find('.process').text("処理中です");
+                //印刷画面
+                $("#send_data").find('.send_text').text("以下のボタンをクリックするとデータが受付に転送されます");
+                $("#send_data").find('#print').text("印刷する");
+                //終了画面  
+                $("#end").find('.end_text').html("ありがとうございました。<br>"+
+                    "結果は受付で印刷されます<br>"+
+                    "係員を呼び、受付までお越しください<br>"+
+                    "忘れ物に十分ご注意ください<br>");  
+                $("#end").find('#return_start').text("スタートに戻る"); 
+                isEnglich = 0;
+            }
+        }
+
+        function slideshow_timer() {
+            left+=10;
+            if (num == 1) {
+                num = 0;
+            }
+            else {
+                num++;
+            }
+            compchan.src = pics_src[num];
+            compchan.style.left = left + 'px';
+
+            setTimeout("slideshow_timer()", 120);
+        }
+
+    </script>
+
+    <!--カメラ関連-->
+    <script>
+        const video = document.getElementById('camera');      //HTMLでidがcameraのものをvideoという名前で編集する
+	    const canvas = document.getElementById('canvas');     //画像出力先
+	    const ctx = canvas.getContext('2d');                  //canvasの描画モードを2sに      
+
+	    const constraints =
+	    {
+		    audio: false,
+		    video:{
+			    width: { min: 640, ideal: 640, max: 1280 },
+			    height: { min: 480, ideal: 480, max: 960 },
+			    facingMode: "user"
+		    }
+        };
+        
+        //制限に従い、カメラを起動する
+	    let gum = navigator.mediaDevices.getUserMedia(constraints);
+	    gum.then((mediaStream) => {
+            // Flip image
+            //ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
+            
+            //カメラが取得する映像をIDがcameraの要素に表示する
+            video.srcObject = mediaStream;
+        
+            //video.play();          
+        }).catch((err) => { console.error(err);alert("カメラ起動が拒否されました") });//エラー処理
+        
+        //撮影処理
+        video.addEventListener("click", function() {//クリックすると
+            take_picture()            //写真をとる
+        });
+
+        //写真撮影処理の詳細
+        //画像を読み取り配列に保存する
+        function take_picture() {
+			//var img = document.getElementById('img');//デバッグ用
+
+			//videoの縦幅横幅を取得
+			var w = video.offsetWidth;
+			var h = video.offsetHeight;
+
+			//同じサイズをcanvasに指定
+			canvas.setAttribute("width", w);
+			canvas.setAttribute("height", h);
+
+			//canvasにコピー
+			ctx.drawImage(video, 0, 0, w, h);
+			//imgにpng形式で書き出し
+            //img.src = canvas.toDataURL('image/png');//imgのidの部分に画像が表示されるようにする。デバッグ用
+            var imageURL = canvas.toDataURL('image/png');//URL表記で画像データを表す
+            var photoCount = odai_count-2;//何番目の画像か取得する
+            imgArray[photoCount] = imageURL;//画像配列に代入する
+            //alert(photoCount);
+            //以下で画像を送って受け取っている
+            processImage(photoCount);
+            
+        }
+
+        makeblob = function(dataURL) {
+            var BASE64_MARKER = ';base64,';
+            if (dataURL.indexOf(BASE64_MARKER) == -1) {
+                var parts = dataURL.split(',');
+                var contentType = parts[0].split(':')[1];
+                var raw = decodeURIComponent(parts[1]);
+                return new Blob([raw], {type: contentType});
+            }
+            var parts = dataURL.split(BASE64_MARKER);
+            var contentType = parts[0].split(':')[1];
+            var raw = window.atob(parts[1]);
+            var rawLength = raw.length;
+            var uInt8Array = new Uint8Array(rawLength);
+            for (var i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            return new Blob([uInt8Array], {type: contentType});
+        }
+
+    //画像をFaceAPIに送信しdataを受診する-->
+    function processImage(in_count){
+        //alert(1);
+        //サブスクリプションキーを入れる
+        var subscriptionKey = "ab059da0ebea49bca6586cc2350e3493";
+    
+        //自身のFaceAPIのサイトのURLを記入する
+        var uriBase = "https://japaneast.api.cognitive.microsoft.com/face/v1.0/detect";
+    
+        //取得したいパラメータを指定する
+        var params = {
+            "returnFaceId": "true",
+            "returnFaceLandmarks": "false",
+            "returnFaceAttributes":
+                "age,gender,headPose,smile,facialHair,glasses,emotion," +
+                "hair,makeup,occlusion,accessories,blur,exposure,noise"
+        };
+        //分析したい画像を入力する
+        var sourceImageUrl = imgArray[in_count];
+       
+        // Perform the REST API call.
+        //データ送信のメインの部分
+        //ajaxで非同期処理をしている       
+        //alert(sourceImageUrl2);
+        $.ajax({
+            url: uriBase + "?" + $.param(params),
+    
+            // Request headers.
+            beforeSend: function(xhrObj){
+                xhrObj.setRequestHeader("Content-Type","application/octet-stream");
+                xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+            },            
+            type: "POST",
+            processData: false,
+            data: makeblob(sourceImageUrl),//指定した画像が分析される
+        })
+        //通信完了時
+        .done(function(data) {
+            //ここで得られるdataが欲しいデータ
+            //alert(toString.call(data));
+            //alert("１の顔の年齢は"+data[0].faceAttributes.age+"です");  
+            //alert("２の顔のx座標は"+data[1].faceRectangle.left+"です");   
+            //alert("２の顔の年齢は"+data[1].faceAttributes.age+"です");  
+            //顔の数が一致していて
+            if(data.length === faceNum){
+                //顔の数が１つのとき
+                if(faceNum === 1){
+                    data[0].faceAttributes.hair.bald = String(odaiTextShort[in_count]);
+                    oneFace[in_count] = data[0];
+                }else if(faceNum ===2){
+                    data[0].faceAttributes.hair.bald = String(odaiTextShort[in_count]);
+                    data[1].faceAttributes.hair.bald = String(odaiTextShort[in_count]);
+                    //顔の数が２つのとき
+                    //顔の位置で左右を判別する
+                    if(data[0].faceRectangle.left>data[1].faceRectangle.left){
+                        leftFace[in_count] = data[0];
+                        rightFace[in_count] = data[1];
+                    }else{
+                        leftFace[in_count] = data[1];
+                        rightFace[in_count] = data[0];
+                    }
+                }               
+            }else{
+                alert("顔の数が一致しません。係員を呼んでください");
+                //window.location.reload();
+            }           
+            //alert(JSON.stringify( oneFace[in_count],null, 2));
+            //$("#responseTextArea").val(JSON.stringify(data, null, 2));//ここでデバッグを表示する
+            //var emodata =(data[0].faceAttributes.emotion);
+        })   
+        .fail(function() {
+            alert("データ送信に失敗しました。係員を呼んでください");
+        });
+    }
+
+    //受信したJSONデータをサーバに転送する
+    function SendInfoOne(){
+        //名前代入
+        var b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[6] = JSON.parse(b);
+        oneFace[6]['faceId'] = String(document.name.p1_name.value);            
+        //端末番号代入
+        b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[7] = JSON.parse(b);
+        oneFace[7]['faceId'] = String(1);  
+        //送信時間代入
+        b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[8] = JSON.parse(b);
+        var now = new Date();
+        oneFace[8]['faceId'] = now.toLocaleTimeString();  
+        //右か左か
+        b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[9] = JSON.parse(b);
+        oneFace[9]['faceId'] = String("(お一人)");
+        //席id
+        b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[10] = JSON.parse(b);
+        oneFace[10]['faceId'] = String(0);
+        //
+        b = JSON.stringify(oneFace[5]); // JSON文字列化
+        oneFace[11] = JSON.parse(b);
+        oneFace[11]['faceId'] = String("(お一人)");
+        //ajax通信       
+        $.post("save.php",{"ary" : oneFace})
+        .done(function(data) {
+                alert(data);
+		    })
+        //alert("oneParson");
+        
+    }
+    function SendInfoLeft(){
+        var b = JSON.stringify(rightFace[0]); // JSON文字列化
+            leftFace[6] = JSON.parse(b);
+            leftFace[6]['faceId'] = String(document.name.p1_name.value);            
+            //端末番号代入
+            b = JSON.stringify(rightFace[1]); // JSON文字列化
+            leftFace[7] = JSON.parse(b);
+            leftFace[7]['faceId'] = String(1);  
+            //送信時間代入
+            b = JSON.stringify(rightFace[2]); // JSON文字列化
+            leftFace[8] = JSON.parse(b);
+            var now = new Date();
+            leftFace[8]['faceId'] = now.toLocaleTimeString(); 
+            //右か左か
+            b = JSON.stringify(rightFace[3]); // JSON文字列化
+            leftFace[9] = JSON.parse(b);
+            leftFace[9]['faceId'] = String("(左の方)");
+            //席id
+            b = JSON.stringify(rightFace[4]); // JSON文字列化
+            leftFace[10] = JSON.parse(b);
+            leftFace[10]['faceId'] = String(1);
+            //
+            b = JSON.stringify(rightFace[5]); // JSON文字列化
+            leftFace[11] = JSON.parse(b);
+            leftFace[11]['faceId'] = String("(左の方)");
+            $.post("save.php",{"ary" : leftFace})
+            
+    }
+    function SendInfoRight(){
+            //名前代入
+            var b = JSON.stringify(leftFace[0]); // JSON文字列化
+            rightFace[6] = JSON.parse(b);
+            rightFace[6]['faceId'] = String(document.name.p2_name.value);            
+            //端末番号代入
+            b = JSON.stringify(leftFace[1]); // JSON文字列化
+            rightFace[7] = JSON.parse(b);
+            rightFace[7]['faceId'] = String(1);  
+            //送信時間代入
+            b = JSON.stringify(leftFace[2]); // JSON文字列化
+            rightFace[8] = JSON.parse(b);
+            var now = new Date();
+            rightFace[8]['faceId'] = now.toLocaleTimeString();  
+            //右か左か
+            b = JSON.stringify(leftFace[3]); // JSON文字列化
+            rightFace[9] = JSON.parse(b);
+            rightFace[9]['faceId'] = String("(右の方)");
+            //席id
+            b = JSON.stringify(leftFace[4]); // JSON文字列化
+            rightFace[10] = JSON.parse(b);
+            rightFace[10]['faceId'] = String(2);
+            //
+            b = JSON.stringify(leftFace[5]); // JSON文字列化
+            rightFace[11] = JSON.parse(b);
+            rightFace[11]['faceId'] = String("(右の方)");
+            $.post("save.php",{"ary" : rightFace})   
+    }
+    
+    </script>
+</body>
+
+</html>

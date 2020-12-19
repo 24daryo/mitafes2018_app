@@ -1,0 +1,787 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>表情診断結果画面</title>
+
+</head>
+<body>
+
+
+<div id="container">
+    <div class="grid comp_title"><div class="title">表情診断結果</div></div>
+    <div class="grid comp_username"><div class="name">ユーザーネーム</div></div>
+    <div class="grid comp_bar">
+        <div style="position: relative; height:100%; width:100%; ">
+          <canvas id="myBar" style="position: relative; height:100%; width:100%; "></canvas>
+        </div>
+    </div>
+    <div class="grid comp_chart">
+        <div style="position: relative; height:100%; width:100%; ">
+          <canvas id="myChart" style="position: relative; height:100%; width:100%; "></canvas>
+        </div>
+    </div>
+    <div class="grid comp_text">
+      <div class="text">データエラーです<br>
+      </div>
+    </div>
+    <div class="grid comp_text2">
+        <div class="text2">データエラーです<br>
+        </div>
+      </div>
+    <div class="grid comp_chat1">
+      <div style="position: relative; height:100%; width:100%; ">
+        <canvas id="horizonChart" style="position: relative; height:100%; width:100%; "></canvas>
+      </div></div>
+    <div class="grid comp_chat2"><div class="AIchat">データエラーです</div></div>
+    <div class="grid comp_memo"><div class="memo">記録</div></div>
+</div>
+
+<style>
+#container{
+    border: 1px solid #000;
+    overflow: hidden;
+    position: relative;
+    width: 1050px;
+    height: 740px;
+}
+.grid{
+  margin: 0px;
+  padding: 0px;
+  background: #efefef;
+  float: left;
+}
+.comp_title {
+  width: 1048px;
+  border: 1px solid #000;
+  height: 50px;
+  text-align: center;
+  font-size: 32px;
+}
+.comp_username {
+  width: 1048px;
+  border: 1px solid #000;
+  height: 40px;
+  text-align: center;
+  font-size: 24px;
+}
+.comp_chart {
+  width: 398px;
+  border: 1px solid #000;
+  height: 398px;
+}
+.comp_bar {
+  width: 98px;
+  border: 1px solid #000;
+  height: 398px;
+}
+.comp_text {
+  padding: 5px;
+  width: 538px;
+  border: 1px solid #000;
+  height: 188;
+  font-size: 16px;
+}
+.comp_text2 {
+  padding: 5px;
+  width: 538px;
+  border: 1px solid #000;
+  height: 188;
+  font-size: 16px;
+}
+.comp_chat1 {
+  border: 1px solid #000;
+  width: 638px;
+  height: 244px;
+  font-size: 20px;
+}
+.comp_chat2 {
+  border: 1px solid #000;
+  padding: 5px;
+  width: 398px;
+  height: 148px;
+  font-size: 16px;
+}
+.comp_memo {
+  border: 1px solid #000;
+  padding: 5px;
+  width: 398px;
+  height: 74px;
+  font-size: 16px;
+}
+.comp_detail {
+  border: 1px solid #000;
+  width: 1048px;
+  height:  80px;
+  font-size: 20px;
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
+<script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+<script Language="JavaScript">
+  //初期化時
+  $(document).ready(function(){
+    var data = JSON.parse(window.opener.GetArray());
+    //ここにデータをセットする
+    $(".name").text(data[6]['faceId']+"さん");    
+    //ここでデータを加工する
+    var judgeText;//診断結果
+    var emotion = new Array(0, 0, 0, 0, 0, 0, 0, 0);
+    var d = new Array(0, 0, 0, 0, 0, 0, 0, 0);
+    var side = String(data[9]['faceId']);//どっちに座っていたか
+    var sitId = parseFloat(data[10]['faceId']);//席id
+    sitId = 0;
+    //var chat1 = //AIの呟き：あなたは20代の男性?
+    //var chat2 = //AIの呟き：もしかしてメガネかけてる？、表情診断よく笑ってましたね？
+    //感情データのそれぞれの総和を求める
+    //alert(data[0]['faceAttributes']['emotion']['neutral']);
+    for(var i=0;i<6;i++){
+      emotion[0] += parseFloat(data[i]['faceAttributes']['emotion']['anger']);
+      emotion[1] += parseFloat(data[i]['faceAttributes']['emotion']['contempt']);
+      emotion[2] += parseFloat(data[i]['faceAttributes']['emotion']['disgust']);
+      emotion[3] += parseFloat(data[i]['faceAttributes']['emotion']['fear']);
+      emotion[4] += parseFloat(data[i]['faceAttributes']['emotion']['happiness']);
+      emotion[5] += parseFloat(data[i]['faceAttributes']['emotion']['neutral']);
+      emotion[6] += parseFloat(data[i]['faceAttributes']['emotion']['sadness']);
+      emotion[7] += parseFloat(data[i]['faceAttributes']['emotion']['surprise']);
+    }
+    //感情データのそれぞれの平均を算出する
+    for(var i=0;i<8;i++){
+      d[i] = (emotion[i]/6);
+      d[i] = Math.sqrt(d[i]);
+      d[i] = Math.sqrt(d[i])*120;
+      if(d[i]>100){
+        d[i]= 100;
+      }   
+    }
+    //無表情は別項目
+    d[5] = (emotion[5]/6)*100;
+    d[5] = 100-d[5];
+    if(d[5]<5){
+      d[5]=5;
+    }
+    if(d[5]>100){
+      d[5] = 100;
+    }
+
+    //チャートを構築
+    //色セット構築
+    var colorSet = {
+      red:'rgb(255,99,132)',
+      yellow:'rgb(255,159,86)',
+      blue:'rgb(54,162,235)',
+    };
+    //色のRGB変換
+    var color = Chart.helpers.color;
+    //データの設定
+    var config ={
+      type:'radar',
+      data:{
+        labels:["怒り","侮蔑","嫌悪","恐怖","幸福","悲しみ","驚き"],
+        datasets:[{
+          label:"表情の度合い",
+          backgroundColor:color(colorSet.red).alpha(0.5).rgbString(),
+          borderColor:colorSet.red,
+          pointBackgroundColor:colorSet.red,
+          data:[d[0],d[1],d[2],d[3],d[4],d[6],d[7]]
+        },]
+      },
+      options:{
+        animation:false,
+        showTooltip:false,
+        legend:{position:'bottom'},
+        title:{
+          display:true,
+          fontSize:20,
+          fontColor:'#666',
+          text:'表情分布'
+        },
+        scale:{
+          display:true,
+          pointLabels:{
+            fontSize:15,
+            fontColor:colorSet.blue
+          },
+          ticks:{
+            display:true,
+            fontSize:12,
+            fontColor:colorSet.blue,
+            min:0,
+            max:100,
+            beginAtZero:true
+          },
+          gridLines:{
+            display:true,
+            color:colorSet.yellow
+          }
+        }
+      }
+    }
+    //チャートを描画
+    var myRadar = new Chart($("#myChart"),config);
+
+    //棒グラフ
+    var myBar = new Chart($("#myBar"), {
+      type: 'bar',                           //◆棒グラフ
+      data: {                                //◆データ
+          //labels: ['表情の豊かさ'].map((v)=>v.split("")),     //ラベル名
+          datasets: [{                       //データ設定
+              data: [d[5]],          //データ内容
+              backgroundColor: ['#FF4444']   //背景色
+          }]
+      },
+      options: {        
+        animation:false,                     //◆オプション
+          responsive: true,                  //グラフ自動設定
+          legend: {                          //凡例設定
+              display: false                 //表示設定
+          },
+          title: {                           //タイトル設定
+              position:'bottom',
+              display: true,                 //表示設定
+              fontSize: 14,                  //フォントサイズ
+              text: '表情の豊かさ'                //ラベル
+          },
+          scales: {                          //軸設定
+              yAxes: [{                      //y軸設定
+                  display: true,             //表示設定
+                  scaleLabel: {              //軸ラベル設定
+                      display: false,          //表示設定
+                      labelString: '縦軸ラベル',  //ラベル
+                      fontSize: 14               //フォントサイズ
+                  },
+                  ticks: {                      //最大値最小値設定
+                      min: 0,                   //最小値
+                      max: 100,                  //最大値
+                      fontSize: 14,             //フォントサイズ
+                      stepSize: 25               //軸間隔
+                  },
+              }],
+              xAxes: [{                         //x軸設定
+                  display: true,                //表示設定
+                  barPercentage: 0.6,           //棒グラフ幅
+                  categoryPercentage: 0.6,      //棒グラフ幅
+                  scaleLabel: {                 //軸ラベル設定
+                      display: false,             //表示設定
+                      labelString: '横軸ラベル',  //ラベル
+                      fontSize: 14               //フォントサイズ
+                  },
+                  ticks: {
+                      fontSize: 14             //フォントサイズ
+                  },
+              }],
+          },
+          layout: {                             //レイアウト
+              padding: {                          //余白設定
+                  left: 0,
+                  right: 5,
+                  top: 10,
+                  bottom: 0
+              }
+          }
+      }
+    });
+
+    
+
+    //表情診断のテキストを構成する
+    //表情の豊かさ
+    var emo_text;
+    var voltageFlag = false;
+    if(d[5]<5){
+      emo_text ="あなたはなかなか表情を明かしてくれませんね";
+    }else if((d[5]<33)&&(d[5]>=5)){
+      emo_text ="あなたはなかなか表情に現れにくい方ですか？";
+    }else if((d[5]>=33)&&(d[5]<=66)){
+      emo_text　="あなたは表情のバランスが良いですね";
+    }else if((d[5]>66)&&(d[5]<90)){
+      emo_text = "あなたは表情豊かな方ですね";
+      voltageFlag = true;
+    }else if(d[5]>=90){
+      emo_text = "あなたはとっても表情が豊かですね";
+      voltageFlag = true;
+    }
+    var enjoyFlag = false;//happy
+    var enjoy2Flag = false;
+    var sadFlag = false;//sad
+    var anglyFlag = false;//angly
+    var badFlag = false;//3つ
+    var surpriseFlag = false;//surprize
+    //一番出た表情
+    var first_emo_text;
+    //データの並び替え
+    var emoData = new Array(d[0],d[1],d[2],d[3],d[4],d[6],d[7]);
+    var maxIndex = emoData.indexOf(Math.max.apply(null,emoData));
+    if(maxIndex==0){
+      first_emo_text="そんなあなたは怒りの表情がよく現れています";
+      anglyFlag = true;
+    }else if(maxIndex==1){
+      first_emo_text="お題のような状況では呆れることが多いのかもしれませんね";
+      badFlag = false;
+    }else if(maxIndex==2){
+      first_emo_text="お題に遭遇した場合は不快感を表す場合が多いのかもしれません";
+      badFlag = false;
+    }else if(maxIndex==3){
+      first_emo_text="お題のような状況では怖がることが多いのでしょうか";
+      badFlag = false;
+    }else if(maxIndex==4){
+      first_emo_text="お題に対してもとっても楽しそう！";
+      enjoyFlag = true;
+    }else if(maxIndex==5){
+      first_emo_text="きっとお題を想像して悲しくなってしまったのかもしれません";
+      sadFlag = true;
+    }else if(maxIndex==6){
+      first_emo_text="そしてよく驚くことが多いのではないでしょうか";
+      surpriseFlag = true;
+    }
+    //最大値を最小にする
+    emoData[maxIndex]= -1;
+    //２番目に出た表情
+    var second_emo_text;
+    var secondIndex = emoData.indexOf(Math.max.apply(null,emoData));
+    if(secondIndex==0){
+      second_emo_text="他にも怒りの表情が出ることもあるのかもしれませんね";
+    }else if(secondIndex==1){
+      second_emo_text="そしてちょっと呆れる側面が出ちゃうことも";
+    }else if(secondIndex==2){
+      second_emo_text="嫌だなーと思うことが表情に出ることもありそうです";
+    }else if(secondIndex==3){
+      second_emo_text="それに怖いという表情になりやすい側面もありそうです";
+    }else if(secondIndex==4){
+      second_emo_text="ですが楽しいという表情も現れているみたいですね";
+      enjoy2Flag = true;
+    }else if(secondIndex==5){
+      second_emo_text="他にも悲しいという表情も読み取れました";
+    }else if(secondIndex==6){
+      second_emo_text="そして驚きの表情が出ちゃう側面も持ち合わせています";
+    }
+    //総合的なテキスト
+    var total_text;
+    var total_text2;
+    //楽しいが出ているものは優先的に表示
+    if((enjoyFlag===true)||((enjoy2Flag===true)&&(d[4]>50))){
+      if(voltageFlag===true){
+        total_text="そんな感情豊かで楽しそうなあなたは周りもハッピーにする存在です";
+        total_text2="そのまま三田祭も楽しんじゃいましょう";
+      }else{
+        total_text="そんな感情穏やかでも楽しそうなあなたは周りを和ませる存在です";
+        total_text2="どんな状況でも笑顔なあなたはきっと魅力に映るはずです";
+      }
+    }else{
+      //その他の感情を読み取る
+      if(anglyFlag===true){
+        if(voltageFlag===true){
+          total_text="そんな感情豊かで怒りの表情が出やすいあなたも今日は三田祭です";
+          total_text2="色々なお店を回るうちに怒りもどこかに飛んでいくでしょう";
+        }else{
+          total_text="そんなクールで怒りの表情が出やすいあなたも今日は三田祭です";
+          total_text2="三田祭の催しをみているうちに表情も和らぐはずです";
+        }
+      }else if(sadFlag===true){
+        if(voltageFlag===true){
+          total_text="そんな感情豊かで悲しくなっちゃうあなたも今日は三田祭です";
+          total_text2="感情豊かなあなたなら三田祭もすぐにエンジョイできるはずです";
+        }else{
+          total_text="そんなクールなあなたはきっと冷静に分析ができる方です";
+          total_text2="三田祭の催しを違った角度で捉えているのかもしれません";
+        }
+      }else if(surpriseFlag===true){
+        if(voltageFlag===true){
+          total_text="そんな感情豊かでびっくりしがちなあなたは元気な人です";
+          total_text2="周りの方も感情豊かなあなたをみて退屈しないでしょう";
+        }else{
+          total_text="そんなクールを装いつつ驚きがちなあなたはきっと敏感な人です";
+          total_text2="三田祭ももしかしたら驚きながらみているのかもしれません";
+        }
+      } 
+    }
+    //もし感情が豊かなら上書き
+    var emoTmpData = new Array(d[0],d[1],d[2],d[3],d[4],d[6],d[7]);
+    var emoCount = 0;
+    var silentCount = 0;
+    for(var i=0;i<7;i++){
+      if(emoTmpData[i]>50){
+        //alert(emoTmpData[i]);
+        emoCount= emoCount+1;
+      }
+      if(emoTmpData[i]<30){
+        silentCount++;
+      }
+    }
+    //もし感情が豊かなら上書き
+    if(emoCount>4){
+      total_text="そんな感情豊かで様々な表情をするあなたは喜怒哀楽に富んだ人です";
+      total_text2="素直な心の持ち主なあなたはすぐに表情が出てしまうでしょう";
+    }
+    //もし感情がほとんど出ないなら上書き
+    if(silentCount>=6){
+      total_text="そんなとってもクールでポーカーフェイスなあなたは落ち着きに満ちている人です";
+      total_text2="慌てず騒がすなあなたはどんな場面でも冷静でいられるのかもしれませんね";
+    }
+
+    //テキストを上書き
+    $('.text').html(
+      "診断コメント"+"<br> "+
+      " "+emo_text+"<br> "+
+      " "+first_emo_text+"<br> "+
+      " "+second_emo_text+"<br> "+
+      " "+total_text+"<br> "+
+      " "+total_text2+"<br>"); 
+
+    //診断詳細を表示 
+    if((sitId ==0)||(sitId == 1)||(sitId==2)){
+      //お一人様の時
+      //笑った回数を測定
+      var smileCount = 0;
+      for(var i=0;i<6;i++){
+        if(parseFloat(data[i].faceAttributes.smile)>0.5){
+          smileCount++;
+        }
+      }
+      //alert(smileCount);
+      //感情の出方を測定
+      var peakCount=0;
+      for(var i=0;i<6;i++){        
+        if(parseFloat(data[i]['faceAttributes']['emotion']['anger'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['contempt'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['disgust'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['fear'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['happiness'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['neutral'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['sadness'])>0.9){
+          peakCount++;
+        }
+        if(parseFloat(data[i]['faceAttributes']['emotion']['surprise'])>0.9){
+          peakCount++;
+        }
+      }
+      var peakText;
+      if(6<=peakCount){
+        peakText ="全ての各お題で特定の感情が現れていました";
+      }else if((4<=peakCount)&&(peakCount<=5)){
+        peakText ="表情は極端に現れる場合が比較的多いようです";
+      }else if((1<=peakCount)&&(peakCount<=3)){
+        peakText ="いろんな種類の感情が表情に出ることが多いようです";
+      }
+      //alert(peakCount);
+      //一番よく笑っていたお題を見つける
+      var smileArray = new Array(
+        parseFloat(data[0].faceAttributes.smile),
+        parseFloat(data[1].faceAttributes.smile),
+        parseFloat(data[2].faceAttributes.smile),
+        parseFloat(data[3].faceAttributes.smile),
+        parseFloat(data[4].faceAttributes.smile),
+        parseFloat(data[5].faceAttributes.smile)
+      );
+      var smileThemeIndex = parseInt(smileArray.indexOf(Math.max.apply(null,smileArray)));
+      var smileTheme = data[smileThemeIndex].faceAttributes.hair.bald;
+      //特定のお題は~でしたか？を記述する
+      var featureThemeItem = new Array();     
+      for(var i=0;i<6;i++){        
+        if(parseFloat(data[i]['faceAttributes']['emotion']['anger'])>0.8){
+          featureThemeItem.push({id:i,text:"怒りの表情をしませんでしたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['contempt'])>0.8){
+          featureThemeItem.push({id:i,text:"侮蔑な感情が湧きましたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['disgust'])>0.8){
+          featureThemeItem.push({id:i,text:"不満な感情を抱きましたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['fear'])>0.8){
+          featureThemeItem.push({id:i,text:"恐怖を想像しませんでしたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['happiness'])>0.8){
+          featureThemeItem.push({id:i,text:"楽しいことを想像しませんでしたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['sadness'])>0.8){
+          featureThemeItem.push({id:i,text:"悲しい気持ちを想像しませんでしたか？"});
+        }
+        else if(parseFloat(data[i]['faceAttributes']['emotion']['surprise'])>0.8){
+          featureThemeItem.push({id:i,text:"びっくりした顔をしませんでしたか？"});
+        }
+      }
+      
+
+      var featureThemeText;
+      var featureThemeShort;
+      if(featureThemeItem.length==0){
+        featureThemeShort = "特にど";
+        featureThemeText = "も特定の感情は沸いていないようですね";
+
+        //テキストを上書き
+        $('.text2').html(
+          "診断詳細"+"<br>"+
+          "・6回の診断のうち笑っている回数は"+smileCount+"回でした<br>"+
+          "・"+peakText+"<br>"+
+          "・"+smileTheme+"のお題が一番笑顔でしたね<br>"+
+          "・"+featureThemeShort+"のお題で"+featureThemeText+"<br>");
+      }else{
+        //配列をシャッフルする
+        for(var i = featureThemeItem.length - 1; i > 0; i--){
+          var r = Math.floor(Math.random() * (i + 1));
+          var tmp = featureThemeItem[i];
+          featureThemeItem[i] = featureThemeItem[r];
+          featureThemeItem[r] = tmp;
+        }
+        //var randId = Math.floor( Math.random()*featureThemeItem.length);//0~アイテム数のランダムなID取得
+        featureThemeText = featureThemeItem[0].text;//そのIDのテキストを取得
+        var featureTmpId = parseInt(featureThemeItem[0].id);//そのidを取り出して
+        featureThemeShort = data[featureTmpId].faceAttributes.hair.bald//お題を読み込む
+
+        //テキストを上書き
+        $('.text2').html(
+          "診断詳細"+"<br>"+
+          "・6回の診断のうち笑っている回数は"+smileCount+"回でした<br>"+
+          "・"+peakText+"<br>"+
+          "・"+smileTheme+"のお題が一番笑顔でしたね<br>"+
+          "・"+featureThemeShort+"のお題で"+featureThemeText+"<br>");
+        }
+        if(featureThemeItem.length>=2){
+          var featureThemeText2 = featureThemeItem[1].text;//そのIDのテキストを取得
+          var featureTmpId2 = parseInt(featureThemeItem[1].id);//そのidを取り出して
+          var featureThemeShort2 = data[featureTmpId2].faceAttributes.hair.bald//お題を読み込む
+          $('.text2').html(
+            "診断詳細"+"<br>"+
+            "・6回の診断のうち笑っている回数は"+smileCount+"回でした<br>"+
+            "・"+peakText+"<br>"+
+            "・"+smileTheme+"のお題が一番笑顔でしたね<br>"+
+            "・"+featureThemeShort+"のお題で"+featureThemeText+"<br>"+
+            "・他にも"+featureThemeShort2+"のお題で"+featureThemeText2+"<br>");
+          } 
+    }else if((sitId == 1)||(sitId==2)){
+      //相性診断の時
+      alert("二人用");
+    }
+    //呟き判定
+    var AIchatText = "";
+    //年齢測定
+    var tmpYear = 0;
+    for(var i=0;i<6;i++){
+      tmpYear += parseInt(data[0].faceAttributes.age);
+    }
+    tmpYear = tmpYear/6;
+    var year = Math.floor( tmpYear / 10) * 10;
+    var yearDetail;
+    if((tmpYear-year)>5){
+      yearDetail= "後半";
+    }else{
+      yearDetail= "前半";
+    }
+    //子供判定
+    if(tmpYear<10){
+      year=10;
+      yearDetail="未満"
+    }
+    var gender;
+    var genderCount=0;
+    for(var i=0;i<6;i++){
+      if(data[i].faceAttributes.gender =="male"){
+        genderCount++;
+      }
+    }
+    if(genderCount>3){
+      gender ="男性";
+    }else{
+      gender ="女性";
+    }
+    //子供判定
+    if(tmpYear<10){
+      if(data[0].faceAttributes.gender =="male"){
+        gender ="男の子";
+      }else{
+        gender ="女の子";
+      }
+    }
+    AIchatText += "・もしかして"+year+"代"+yearDetail+"の"+gender+"?"+"<br>";
+
+    //メガネ判定
+    var glassesCount = 0;
+    for(var i=0;i<6;i++){
+      if(data[i]['faceAttributes']['glasses']!="NoGlasses"){
+        glassesCount++;
+      }
+    }
+    if(glassesCount>3){
+      AIchatText += "・もしかしてメガネかけてる?"+"<br>"
+    }
+    //メイク判定
+    var makeupEyeCount=0;
+    var makeupLipCount=0;
+    for(var i=0;i<6;i++){
+      if(data[i]['faceAttributes']['makeup']['eyeMakeup']== true){
+        makeupEyeCount++;
+      }
+      if(data[i]['faceAttributes']['makeup']['lipMakeup']== true){
+        makeupLipCount++;
+      }
+    }
+    if((makeupEyeCount>3)&&(gender =="女性")){
+      AIchatText += "・もしかして口紅塗ってるかけてる?"+"<br>";
+    }
+    if((glassesCount>3)&&(gender =="女性")){
+      AIchatText += "・もしかして目元をメイクしてる?"+"<br>";
+    }
+ 
+    //髪色判定(スキンヘッドの方を来年は考慮してください。エラーでます！)
+    if(data[0].faceAttributes.hair.hairColor[0].color=="black"){
+      AIchatText += "・もしかして髪の毛の色は黒色?"+"<br>";
+    }
+    if(data[0].faceAttributes.hair.hairColor[0].color=="brown"){
+      AIchatText += "・もしかして髪の毛の色はブラウン?"+"<br>";
+    }
+    if(data[0].faceAttributes.hair.hairColor[0].color=="gray"){
+      AIchatText += "・もしかして髪の毛の色はグレー?"+"<br>"; the 
+    }
+    if(data[0].faceAttributes.hair.hairColor[0].color=="blond"){
+      AIchatText += "・もしかして髪の毛の色はブロンド?"+"<br>";
+    }
+    if(data[0].faceAttributes.hair.hairColor[0].color=="red"){
+      AIchatText += "・もしかして髪の毛の色は赤色?"+"<br>";
+    }
+    if(data[0].faceAttributes.hair.hairColor[0].color=="other"){
+      AIchatText += "・もしかして髪の毛は色は黒色以外?"+"<br>";
+    }
+
+    //アクセサリ判定
+    /*
+    if(data[0].faceAttributes.hair.hairColor[0].color=="black"){
+        AIchatText += "・もしかして髪の毛の色は黒色?"+"<br>";
+      }
+    */
+
+    $(".AIchat").html(
+      "AIの呟き"+"<br>"+
+      AIchatText); 
+
+    //各お題のリアクション度合い
+    var ra = new Array(6);
+    for(var i=0;i<6;i++){
+      //各お題の値を連想配列にする
+      //alert(parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['happiness'])*100));
+      var odaiRangeArray = new Array(
+        {odai:data[i].faceAttributes.hair.bald, emotion:"怒り",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['anger'])*100),color:"#FF7F7F",subcolor:"rgba(255,127,127,0.5)"},//赤
+        {odai:data[i].faceAttributes.hair.bald, emotion:"侮蔑",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['contempt'])*100),color:"#7FBFFF",subcolor:"rgba(127,191,255,0.5)"},//青
+        {odai:data[i].faceAttributes.hair.bald, emotion:"不快",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['disgust'])*100),color:"#7F7FFF",subcolor:"rgba(191,127,255,0.5)"},//紫
+        {odai:data[i].faceAttributes.hair.bald, emotion:"恐怖",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['fear'])*100),color:"#7FFFBF",subcolor:"rgba(127,255,191,0.5)"},//深緑
+        {odai:data[i].faceAttributes.hair.bald, emotion:"幸福",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['happiness'])*100),color:"#FFFF7F",subcolor:"rgba(255,255,127,0.5)"},//黄色
+        //{odai:data[i].faceAttributes.hair.bald, emotion:"無表情",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['natural'])*100),color:"#7FFF7F",subcolor:"rgba(255,127,127,0.5)"},//緑
+        {odai:data[i].faceAttributes.hair.bald, emotion:"悲しみ",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['sadness'])*100),color:"#7FFFFF",subcolor:"rgba(127,255,255,0.5)"},//水色
+        {odai:data[i].faceAttributes.hair.bald, emotion:"驚き",value:parseFloat(parseFloat(data[i]['faceAttributes']['emotion']['surprise'])*100),color:"#FFBF7F",subcolor:"rgba(255,191,127,0.5)"}//オレンジ
+      );
+      //連想配列を降順ソートする
+      odaiRangeArray.sort(function(a,b){
+        return a.value>b.value?-1:1;
+      })
+      //一番大きな連想配列の値を代入する
+      ra[i] = odaiRangeArray[0];
+    }
+      //横の棒グラフのオプションを設定
+      //横棒グラフを描画
+      var HorizonChart = new Chart($("#horizonChart"), {
+      type: 'horizontalBar',                           //◆棒グラフ
+      data: {                                //◆データ
+          labels : [ra[0].odai,ra[1].odai,ra[2].odai,ra[3].odai,ra[4].odai,ra[5].odai],    //ラベル名
+          datasets: [{                 
+            label : [ra[0].emotion,ra[1].emotion,ra[2].emotion ,ra[3].emotion,ra[4].emotion,ra[5].emotion],              //データ設定
+            data: [ra[0].value,ra[1].value,ra[2].value,ra[3].value,ra[4].value,ra[5].value],          //データ内容
+            backgroundColor: [
+              "#FF7F7F",
+              "#FFBF7F",
+              "#FFFF7F",
+              "#7FFF7F",
+              "#7FFFFF",
+              "#7FBFFF"
+            ]   //背景色
+          }]
+      },
+      options: {        
+        animation:false,                     //◆オプション
+          responsive: true,                  //グラフ自動設定
+          legend: {                          //凡例設定
+              display: false                 //表示設定
+          },
+          title: {                           //タイトル設定
+              display: true,                 //表示設定
+              fontSize: 14,                  //フォントサイズ
+              text: '各お題のリアクション度合い'                //ラベル
+          },
+          scales: {                          //軸設定
+              xAxes: [{                      //y軸設定
+                  display: true,             //表示設定
+                  scaleLabel: {              //軸ラベル設定
+                      display: false,          //表示設定
+                      labelString: '縦軸ラベル',  //ラベル
+                      fontSize: 18               //フォントサイズ
+                  },
+                  ticks: {                      //最大値最小値設定
+                      min: 0,                   //最小値
+                      max: 100,                  //最大値
+                      fontSize: 14,             //フォントサイズ
+                      stepSize: 25               //軸間隔
+                  },
+              }],
+              yAxes: [{                         //x軸設定
+                  display: true,                //表示設定
+                  barPercentage: 0.4,           //棒グラフ幅
+                  categoryPercentage: 0.4,      //棒グラフ幅
+                  scaleLabel: {                 //軸ラベル設定
+                      display: false,             //表示設定
+                      labelString: '横軸ラベル',  //ラベル
+                      fontSize: 14               //フォントサイズ
+                  },
+                  ticks: {
+                      fontSize: 14             //フォントサイズ
+                  },
+              }],
+          },
+          layout: {                             //レイアウト
+              padding: {                          //余白設定
+                  left: 5,
+                  right: 5,
+                  top: 0,
+                  bottom: 0
+              }
+          }
+      }
+    });
+    var now = new Date();
+    $(".memo").html(
+      "記録<br>"+
+      "・"+now.toLocaleString()+"<br>"+
+      "・Produced by "+"Computer Media Production"+"<br>"); 
+
+    //印刷画面出力
+    window.print();
+    });
+
+  </script>
+  <script type="text/javascript" src="jquary.js"></script>
+  <script type="text/javascript" src="masonry.pkgd.min.js"></script>
+  <script>
+  $(function(){
+      $('#container').masonry({
+          itemSelector: '.grid',//整理される要素のclassを指定
+          columnWidth: 525,     //一列の幅サイズを指定
+          isAnimated: true,     //スムースアニメーション設定
+          isFitWidth: true,     //親要素の幅サイズがピッタリ
+          isRTL: false,         //整理される要素が左右逆になる（読み言語などに）
+          gutterWidth: 0,       //整理される要素間の溝の幅を指定
+          containerStyle: { position: 'relative' }, //親要素にスタイルを追加できる
+          isResizable: true     //ウィンドウサイズが変更された時に並び替え
+      });
+  });
+  </script>
+</body>
+</html>
