@@ -6,7 +6,7 @@
 
 結果のサンプルは以下のようになります。
 
-<img src="https://github.com/24daryo/mitafes2019_app/blob/main/image/init.png" width="600">
+<img src="https://github.com/24daryo/mitafes2019_app/image/init.png" width="600">
 
 なお、本アプリは「version1.html」を起動することで様子を確認できますが、
 表情診断の機能には、バックエンド処理をするサーバやAzureのFaceAPIが必要になります。
